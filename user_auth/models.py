@@ -29,7 +29,6 @@ class CustomUser(AbstractUser):
 
     def verify_email_otp(self, otp):
         """Verify if the OTP matches and is not expired."""
-        breakpoint()
 
         if self.email_otp == otp and timezone.now() - self.otp_generated_at <= timezone.timedelta(minutes=5):
             return True

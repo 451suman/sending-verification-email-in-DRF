@@ -37,6 +37,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework_simplejwt',
+    'drf_yasg',
     'rest_framework',
     'user_auth',
 ]
@@ -133,3 +135,9 @@ EMAIL_HOST_USER = 'orozmush@gmail.com'
 EMAIL_HOST_PASSWORD = 'aafd tpjd lpjq jajt'
 
 AUTH_USER_MODEL = 'user_auth.CustomUser'
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    )
+}

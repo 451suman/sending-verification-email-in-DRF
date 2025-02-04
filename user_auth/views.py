@@ -6,11 +6,22 @@ from django.utils import timezone
 from .models import CustomUser  # Import the correct model
 from .serializers import LoginSerializer, UserSerializer, EmailOTPVerifySerializer
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework import permissions
+from rest_framework.response import Response 
+from rest_framework.exceptions import PermissionDenied
 
 class RegisterUserViewSet(viewsets.ModelViewSet):
     queryset = CustomUser.objects.all()
     serializer_class = UserSerializer
+
+    def get_permissions(self):
+        # Check the action and assign the appropriate permissions
+        if self.action == 'create':
+            # Allow everyone to create (you can customize the permission class here)
+            return [permissions.AllowAny()]
+        else:
+            # Restrict other actions (e.g., GET, PUT, DELETE) to authenticated users
+           raise PermissionDenied("You do not have permission to perform this action.")
 
     def create(self, request, *args, **kwargs):
         # Override the create method to include OTP logic
@@ -64,28 +75,44 @@ class VerifyEmailOTPView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-# from django.contrib.auth.hashers import check_password
-# class LoginViewSet(APIView):
-#     serializer_class = LoginSerializer
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.response import Response
+from django.contrib.auth.hashers import check_password
 
-#     def post(self, request, *args, **kwargs):
-#         username = request.data.get('username')
-#         password = request.data.get('password')
-#         try:
-#             user = CustomUser.objects.get(username=username)
-#         except CustomUser.DoesNotExist:
-#             # Return specific error if username is incorrect
-#             return Response({
-#                 "status": "failed",
-#                 "message": "Username is incorrect"
-#             })
+class LoginViewSet(APIView):
+    serializer_class = LoginSerializer
+
+    def post(self, request, *args, **kwargs):
+        username = request.data.get('username')
+        password = request.data.get('password')
+        try:
+            user = CustomUser.objects.get(username=username)
+        except CustomUser.DoesNotExist:
+            # Return specific error if username is incorrect
+            return Response({
+                "status": "failed",
+                "message": "Username is incorrect"
+            })
         
-#         if not check_password(password, user.password):
-#             # Return specific error if password is incorrect
-#             return Response({
-#                 "status": "failed",
-#                 "message": "Password is incorrect"
-#             })
 
-       
+        if not check_password(password, user.password):
+            # Return specific error if password is incorrect
+            return Response({
+                "status": "failed",
+                "message": "Password is incorrect"
+            })
+
+        if user.is_email_verified == False:
+            return Response({
+                "status": "failed",
+                "message": "Email is not verified"
+            })
+
+        refresh = RefreshToken.for_user(user)
+        return Response ({
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+            "success": True,
+            "message": "Login successfull"
+        })
     
